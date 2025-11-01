@@ -206,7 +206,7 @@ def get_user_by_email(cursor, email):
     return cursor.fetchone()
 
 def get_user_id_by_email(cursor, email):
-    row = cursor.execute("SELECT id FROM users WHERE lower(email) = lower(?)", (email.strip(),)).fetchone()
+    row = get_user_by_email(cursor, email)
     return row["id"] if row else None
 
 def get_users(cursor, min_total_dollars=0):
@@ -286,13 +286,15 @@ def get_invoices_by_user_id(cursor, user_id):
     """, (user_id,))
     return cursor.fetchall()
 
-def get_invoices_by_user_and_range(cursor, user_id, start_iso, end_iso):
+def get_invoices_by_user_and_range(cursor, user_id, start_date, end_date):
+    start_date = to_iso(start_date)
+    end_date = to_iso(end_date)
     cursor.execute("""
     SELECT invoice_id, user_id, date_issued, due_date, total, created_at, updated_at
     FROM invoices
     WHERE user_id = ? AND date_issued BETWEEN ? AND ?
     ORDER BY date_issued DESC, invoice_id DESC
-    """, (user_id, start_iso, end_iso,))
+    """, (user_id, start_date, end_date,))
     return cursor.fetchall()
 
 def count_invoices(cursor):
@@ -424,3 +426,4 @@ if __name__ == "__main__":
         print("\nDELETE functions:")
         print(delete_invoice(cursor, 2))
         print_invoices(get_invoices_by_user_id(cursor, uid))
+        print(datetime.now().date())
