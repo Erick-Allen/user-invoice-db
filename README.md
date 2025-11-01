@@ -5,3 +5,15 @@ A relational database project built with **SQLite** and **Python**. It manages u
 ### Built With
 - SQLite 3
 - Python 3
+
+---
+
+## Version History
+
+## [v0.2.0]
+### Added
+- Unit tests for all user and invoice CRUD functions.
+
+## [v0.1.0]
+### Added
+- Initial database setup with schema creation and core CRUD logic.
