@@ -5,6 +5,7 @@ from contextlib import contextmanager
 import re
 
 EMAIL_RE = re.compile(r"^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$")
+NAME_RE = re.compile(r"^[A-Za-z][A-Z-a-z' -]*[A-Za-z]$")
 
 # PRINT FUNCTIONS
 def format_user(u) -> str:
@@ -68,11 +69,44 @@ def db_session(db_file="mydatabase.db"):
     finally:
         connect.close()
 
+def normalize_name(name: str) -> str:
+    if not name or not isinstance(name, str):
+        raise ValueError("Name cannot be empty.")
+    name = " ".join(name.strip().split()).title()
+    if not NAME_RE.match(name):
+        raise ValueError("Invalid name format: only letters, spaces, apostrophes, and hyphens are allowed.")
+    return name
+
 def normalize_email(email: str) -> str:
+    if not email or not isinstance(email, str):
+        raise ValueError("Email cannot be empty.")
     email = email.strip().lower()
     if not EMAIL_RE.match(email):
         raise ValueError("Invalid email format")
     return email
+
+def assert_user_exists(cursor, user_id: int) -> None:
+    row = cursor.execute("SELECT 1 FROM users WHERE id=?", (user_id,)).fetchone()
+    if not row:
+        raise ValueError (f"User not found (id={user_id})")
+    
+def assert_email_unique(cursor, email: str, exclude_user_id: int | None = None) -> None:
+    row = cursor.execute(
+        "SELECT id FROM users WHERE lower(email) = lower(?)", (email,)
+    ).fetchone()
+    if row and (exclude_user_id is None or row["id"] != exclude_user_id):
+        raise ValueError(f"Email '{email}' already exists.")
+
+def validate_total(amount):
+    if amount is None:
+        raise ValueError("Invoice total is required.")
+    try:
+        amount = float(amount)
+    except (TypeError, ValueError):
+        raise ValueError("Invoice total must be a valid number")
+    if amount < 0:
+        raise ValueError("Invoice total cannot be negative.")
+    return amount
 
 def to_cents(amount) -> int:
     """Coerce 12.34 / '12.34' -> 1234 (int cents)."""
@@ -97,11 +131,6 @@ def to_iso(date_str: str) -> str:
             continue
     
     raise ValueError(f"Invalid date format: {date_str} (expected MM-DD-YYYY or MM/DD/YYYY, or YYYY-MM-DD)")
-
-def assert_user_exists(cursor, user_id: int) -> None:
-    row = cursor.execute("SELECT 1 FROM users WHERE id=?", (user_id,)).fetchone()
-    if not row:
-        raise ValueError (f"User not found (id={user_id})")
 
 def create_triggers(cursor):
     cursor.executescript("""
@@ -186,8 +215,10 @@ def get_user_invoice_summary(cursor):
 
 # Create
 def create_user(cursor, name, email):
+    name = normalize_name(name)
+    email = normalize_email(email)
+    assert_email_unique(cursor, email)
     try:
-        email = normalize_email(email)
         cursor.execute("""
             INSERT INTO users (name, email) 
             VALUES (?, ?)
@@ -231,8 +262,9 @@ def update_user(cursor, user_id, name=None, email=None):
 
     if name:
         updates.append("name = ?")
-        params.append(name)
+        params.append(normalize_name(name))
     if email:
+        assert_email_unique(cursor, email, exclude_user_id=user_id)
         updates.append("email = ?")
         params.append(normalize_email(email))
 
@@ -255,6 +287,7 @@ def delete_user(cursor, user_id):
 def add_invoice_to_user(cursor, user_id, date_issued, total, due_date=None):
     """Attach a new invoice to an existing user with user_id."""
     assert_user_exists(cursor, user_id)
+    validate_total(total)
     date_issued = to_iso(date_issued)
     due_date = to_iso(due_date)
     total = to_cents(total)
@@ -329,6 +362,7 @@ def update_invoice(cursor, invoice_id, *, date_issued=None, due_date=None, total
         updates.append("due_date = ?")
         params.append(to_iso(due_date))
     if total:
+        validate_total(total)
         updates.append("total = ?")
         params.append(to_cents(total))
     if user_id:
@@ -348,6 +382,7 @@ def update_invoice(cursor, invoice_id, *, date_issued=None, due_date=None, total
 def delete_invoice(cursor, invoice_id):
     cursor.execute("DELETE FROM invoices WHERE invoice_id= ?", (invoice_id,))
     return cursor.rowcount > 0
+
 
 if __name__ == "__main__":
 
