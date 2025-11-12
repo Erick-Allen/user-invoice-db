@@ -91,21 +91,23 @@ def assert_user_exists(cursor, user_id: int) -> None:
         raise ValueError (f"User not found (id={user_id})")
     
 def assert_email_unique(cursor, email: str, exclude_user_id: int | None = None) -> None:
+    email = email.strip().lower()
     row = cursor.execute(
         "SELECT id FROM users WHERE lower(email) = lower(?)", (email,)
     ).fetchone()
-    if row and (exclude_user_id is None or row["id"] != exclude_user_id):
-        raise ValueError(f"Email '{email}' already exists.")
+    if row and (exclude_user_id is None or row['id'] != exclude_user_id):
+        raise ValueError(f"Email '{(email)}' already exists.")
 
 def validate_total(amount):
     if amount is None:
         raise ValueError("Invoice total is required.")
+    if amount < 0:
+        raise ValueError("Invoice total cannot be negative.")
     try:
         amount = float(amount)
     except (TypeError, ValueError):
         raise ValueError("Invoice total must be a valid number")
-    if amount < 0:
-        raise ValueError("Invoice total cannot be negative.")
+    
     return amount
 
 def to_cents(amount) -> int:
@@ -238,7 +240,7 @@ def get_user_by_email(cursor, email):
 
 def get_user_id_by_email(cursor, email):
     row = get_user_by_email(cursor, email)
-    return row["id"] if row else None
+    return row['id'] if row else None
 
 def get_users(cursor, min_total_dollars=0):
     min_cents = to_cents(min_total_dollars)
@@ -280,7 +282,7 @@ def update_user(cursor, user_id, name=None, email=None):
 def delete_user(cursor, user_id):
     cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
     return cursor.rowcount > 0
-
+   
 # ---- Invoice CRUD -----#
 
 # Create
@@ -332,7 +334,7 @@ def get_invoices_by_user_and_range(cursor, user_id, start_date, end_date):
 
 def count_invoices(cursor):
     cursor.execute("SELECT COUNT(*) AS invoice_count FROM invoices")
-    return cursor.fetchone()["invoice_count"]
+    return cursor.fetchone()['invoice_count']
 
 def list_invoices(cursor, limit=100, offset=0):
     cursor.execute("""
@@ -349,7 +351,7 @@ def sum_invoices_by_user(cursor, user_id):
         FROM invoices
         WHERE user_id = ?
     """, (user_id,))
-    return cursor.fetchone()["total_sum"]
+    return cursor.fetchone()['total_sum']
 
 # UPDATE
 def update_invoice(cursor, invoice_id, *, date_issued=None, due_date=None, total=None, user_id=None):
