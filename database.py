@@ -22,7 +22,7 @@ def print_users(rows):
         print_user(u)
 
 def format_invoice(i) -> str:
-    due = f" | Due: {i['due_date']}" if i['due_date'] else ""
+    due = f" | Due: {i['date_due']}" if i['date_due'] else ""
     return f"Invoice #{i['invoice_id']} | {i['date_issued']}{due} | ${fmt_dollars(i['total'])}"
 
 def print_invoice(i):
@@ -177,7 +177,7 @@ def create_invoice_schema(cursor):
     invoice_id      INTEGER PRIMARY KEY,
     user_id         INTEGER NOT NULL,
     date_issued     TEXT    NOT NULL,
-    due_date        TEXT,
+    date_due        TEXT,
     total           INTEGER NOT NULL DEFAULT 0 
                     CHECK (total >= 0 AND total = CAST(total AS INTEGER)),
     created_at      TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
@@ -188,7 +188,7 @@ def create_invoice_schema(cursor):
     -- Index frequent queries and filtering patterns.
     CREATE INDEX IF NOT EXISTS idx_invoices_user_id ON invoices(user_id);                         
     CREATE INDEX IF NOT EXISTS idx_invoices_date_issued ON invoices(date_issued);
-    CREATE INDEX IF NOT EXISTS idx_invoices_due_date ON invoices(due_date);
+    CREATE INDEX IF NOT EXISTS idx_invoices_date_due ON invoices(date_due);
     CREATE INDEX IF NOT EXISTS idx_invoices_user_date ON invoices(user_id, date_issued);
     """)
 
@@ -286,18 +286,18 @@ def delete_user(cursor, user_id):
 # ---- Invoice CRUD -----#
 
 # Create
-def add_invoice_to_user(cursor, user_id, date_issued, total, due_date=None):
+def add_invoice_to_user(cursor, user_id, date_issued, total, date_due=None):
     """Attach a new invoice to an existing user with user_id."""
     assert_user_exists(cursor, user_id)
     validate_total(total)
     date_issued = to_iso(date_issued)
-    due_date = to_iso(due_date)
+    date_due = to_iso(date_due)
     total = to_cents(total)
 
     cursor.execute("""
-        INSERT INTO invoices (user_id, date_issued, due_date, total)
+        INSERT INTO invoices (user_id, date_issued, date_due, total)
         VALUES (?, ?, ?, ?)
-    """, (user_id, date_issued, due_date, total))
+    """, (user_id, date_issued, date_due, total))
     return cursor.lastrowid
 
 # READ
@@ -314,7 +314,7 @@ def get_invoices_by_email(cursor, email):
 
 def get_invoices_by_user_id(cursor, user_id):
     cursor.execute("""
-    SELECT invoice_id, user_id, date_issued, due_date, total, created_at, updated_at
+    SELECT invoice_id, user_id, date_issued, date_due, total, created_at, updated_at
     FROM invoices
     WHERE user_id = ?
     ORDER BY date_issued DESC, invoice_id DESC
@@ -325,7 +325,7 @@ def get_invoices_by_user_and_range(cursor, user_id, start_date, end_date):
     start_date = to_iso(start_date)
     end_date = to_iso(end_date)
     cursor.execute("""
-    SELECT invoice_id, user_id, date_issued, due_date, total, created_at, updated_at
+    SELECT invoice_id, user_id, date_issued, date_due, total, created_at, updated_at
     FROM invoices
     WHERE user_id = ? AND date_issued BETWEEN ? AND ?
     ORDER BY date_issued DESC, invoice_id DESC
@@ -336,9 +336,16 @@ def count_invoices(cursor):
     cursor.execute("SELECT COUNT(*) AS invoice_count FROM invoices")
     return cursor.fetchone()['invoice_count']
 
+def count_invoices_by_user(cursor, user_id):
+    cursor.execute("SELECT COUNT(*) AS count FROM invoices WHERE user_id = ?",
+    (user_id,)
+    )
+    row = cursor.fetchone()
+    return row["count"] if row else 0
+
 def list_invoices(cursor, limit=100, offset=0):
     cursor.execute("""
-    SELECT invoice_id, user_id, date_issued, due_date, total, created_at, updated_at
+    SELECT invoice_id, user_id, date_issued, date_due, total, created_at, updated_at
     FROM invoices
     ORDER BY date_issued DESC, invoice_id DESC
     LIMIT ? OFFSET ?
@@ -354,15 +361,15 @@ def sum_invoices_by_user(cursor, user_id):
     return cursor.fetchone()['total_sum']
 
 # UPDATE
-def update_invoice(cursor, invoice_id, *, date_issued=None, due_date=None, total=None, user_id=None):
+def update_invoice(cursor, invoice_id, *, date_issued=None, date_due=None, total=None, user_id=None):
     updates, params = [], []
     
     if date_issued:
         updates.append("date_issued = ?")
         params.append(to_iso(date_issued))
-    if due_date:
-        updates.append("due_date = ?")
-        params.append(to_iso(due_date))
+    if date_due:
+        updates.append("date_due = ?")
+        params.append(to_iso(date_due))
     if total:
         validate_total(total)
         updates.append("total = ?")
@@ -384,83 +391,3 @@ def update_invoice(cursor, invoice_id, *, date_issued=None, due_date=None, total
 def delete_invoice(cursor, invoice_id):
     cursor.execute("DELETE FROM invoices WHERE invoice_id= ?", (invoice_id,))
     return cursor.rowcount > 0
-
-
-if __name__ == "__main__":
-
-    #----- Database Connection -----#
-    with db_session("mydatabase.db") as (connect, cursor):
-
-        # Clear previous table
-        cursor.execute("DROP TABLE IF EXISTS users")
-        cursor.execute("DROP TABLE IF EXISTS invoices")
-        cursor.execute("DROP VIEW IF EXISTS user_invoice_summary")
-
-        # Create new table
-        create_user_schema(cursor)
-        create_invoice_schema(cursor)
-        create_triggers(cursor)
-        create_user_summary_view(cursor)
-
-        #----- USER CRUD TEST -----#
-
-        # CREATE
-        print("CREATE functions:\n")
-        uid = create_user(cursor, "John", "john@example.com")
-        print("Created user:", uid)
-
-        # READ
-        print("\nREAD functions:\n")
-        print("All users:") 
-        print_users(get_users(cursor))
-        print("Find by email:")
-        print_user(get_user_by_email(cursor, "john@example.com"))
-
-        # UPDATE
-        print("\nUPDATE functions:\n")
-        print("Original user:")
-        print_user(get_user_by_id(cursor, uid))
-        update_user(cursor, uid, "Alice")
-        print("Updated user name:")
-        print_user(get_user_by_id(cursor, uid))
-        update_user(cursor, uid, email="alice@example.com")
-        print("Updated user email:")
-        print_user(get_user_by_id(cursor, uid))
-
-        # DELETE
-        print("\nDELETE functions:\n")
-        print(delete_user(cursor, uid))
-        print("After Deletion try getuserid:", get_user_by_id(cursor, uid))
-        print("After Deletion try getallusers:", get_users(cursor))
-
-        # ---- INVOICE CRUD TEST -----#
-
-        #CREATE 
-        print("\nCREATE functions:\n")
-        uid = create_user(cursor, "Jack", "jack@example.com")
-        add_invoice_to_user(cursor, uid, "01-20-2025", 200.10)
-        add_invoice_to_user(cursor, uid, "03-17-2025", 350.20)
-
-        # READ
-        print("\nREAD functions:\n")
-        print("Get invoices by user id")
-        print_invoices(get_invoices_by_user_id(cursor, uid))
-        print("\nGet invoices by email")
-        print_invoices(get_invoices_by_email(cursor, "jack@example.com"))
-        print("Get user summary from view")
-        print_user_summary(get_user_invoice_summary(cursor))
-
-        print(count_invoices(cursor))
-        print(fmt_dollars(sum_invoices_by_user(cursor, uid)))
-
-        # UPDATE
-        print("\nUPDATE functions:")
-        update_invoice(cursor, 1, total = 100.20)
-        print("Updated invoice")
-        print_invoice(get_invoice_by_id(cursor, 1))
-
-        # DELETE
-        print("\nDELETE functions:")
-        print(delete_invoice(cursor, 2))
-        print_invoices(get_invoices_by_user_id(cursor, uid))
-        print(datetime.now().date())
