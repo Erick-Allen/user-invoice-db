@@ -2,18 +2,23 @@
 
 A relational database project built with **SQLite** and **Python**. It manages users and their invoices with full **CRUD operations**, data validation, triggers, and summary views.
 
-As of **v0.3.0**, the project includes a complete **Command Line Interface (CLI)** built with [Typer](https://typer.tiangolo.com/), enabling direct database interaction through the terminal.
+As of **v0.4.0**, the project includes complete **Command Line Interface (CLI)** support for: 
+- Database initialization, resetting and deletion
+- User management
+- Invoice management
 
+The CLI is built with [Typer](https://typer.tiangolo.com/)
 
 ### Built With
 - SQLite 3
 - Python 3
+- Typer
 
 ---
 
 # Installation
 
-Clone the repository and install dependices:
+Clone the repository and install dependencies:
 
 ```bash
 git clone https://github.com/Erick-Allen/user-invoice-db.git
@@ -36,10 +41,22 @@ pip install -r requirements.txt
 - `python cli.py users update`
 - `python cli.py users delete`
 
-**Other**
-- `python cli.py version`
+**Invoice commands**
+- `python cli.py invoices create`
+- `python cli.py invoices list`
+- `python cli.py invoices get`
+- `python cli.py invoices count`
+- `python cli.py invoices update`
+- `python cli.py invoices delete`
 
-## Version History
+**Other**
+- `python cli.py --version`
+
+# Version History
+## [v0.4.0]
+### Added
+- Full invoice CRUD support in the CLI
+
 ## [v0.3.0]
 ### Added
 - Added Typer-based CLI for user CRUD and database management
@@ -55,3 +72,11 @@ pip install -r requirements.txt
 ## [v0.1.0]
 ### Added
 - Initial database setup with schema creation and core CRUD logic.
+
+# Roadmap
+
+## [v0.4.1] (Patch)
+- Add full automated CLI test suite
+
+## [v0.5.0] (Minor)
+- Add Rich-based colored and formatted CLI output
