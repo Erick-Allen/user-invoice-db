@@ -4,7 +4,19 @@ from datetime import date
 from typing import Optional
 from contextlib import contextmanager
 
-__version__ = "0.4.0"
+def user_not_found(user_id: int | None = None):
+    if user_id is not None:
+        typer.echo(f"User not found (id={user_id})")
+    else:
+        typer.echo("User not found")
+
+def invoice_not_found(invoice_id: int | None = None):
+    if invoice_id is not None:
+        typer.echo(f"Invoice not found (id={invoice_id})")
+    else:
+        typer.echo("Invoice not found")
+
+__version__ = "0.4.1"
 app = typer.Typer(help="Command Line Interface for the User_Invoice_Database.\n\n"
                   "Use '--help' after any command for more details.\n\n"
                   "Example: python cli.py db --help")
@@ -43,6 +55,7 @@ def get_connection(db_path="mydatabase.db"):
     finally:
         connect.close()
 
+# ----- DATABASE COMMANDS ------ 
 @db.command("init", help="Initialize a new database with all tables and schema.")
 def init_db_command(
         db_path: str = typer.Option("mydatabase.db", "--db", help="Path to SQLite DB.")
@@ -127,7 +140,7 @@ def get_user(
     if user:
         typer.echo(f"Found user: {user['name']} ({user['email']})")
     else:
-        typer.echo("User not found")
+        user_not_found(id)
 
 @users.command("list", help="List all users in the database.")
 def list_users(
@@ -205,7 +218,7 @@ def delete_user_by_id(
         try:
             user_to_delete = database.get_user_by_id(cursor, user_id)
             if not user_to_delete:
-                typer.echo(f"No user found with ID {user_id}")
+                user_not_found(user_id)
                 raise typer.Exit(code=1)
             
             was_deleted = database.delete_user(cursor, user_id)
@@ -221,7 +234,7 @@ def delete_user_by_id(
         
     
 
-
+# ----- INVOICES COMMANDS ------ 
 @invoices.command("create", help="Create an invoice for a user.")
 def create_invoice(
     user_id: int = typer.Option(..., "-i", "--id", help="The user to assign this invoice to."),
@@ -234,7 +247,7 @@ def create_invoice(
         try:
             user = database.get_user_by_id(cursor, user_id)
             if not user:
-                typer.echo(f"User not found (id={user_id})")
+                user_not_found(user_id)
                 raise typer.Exit(code=1)
             if date_issued is None:
                 date_issued = date.today().isoformat()
@@ -264,7 +277,7 @@ def list_invoices(
                 user = database.get_user_by_id(cursor=cursor, user_id=user_id)
 
                 if not user:
-                    typer.echo(f"No user found with ID {user_id}")
+                    user_not_found(user_id)
                     raise typer.Exit(code=1)
                 typer.echo(f"\nUser {user['id']}: {user['name']} <{user['email']}>")
                 typer.echo("-" * 50)
@@ -308,8 +321,8 @@ def get_invoice(
         try:
             invoice = database.get_invoice_by_id(cursor=cursor, invoice_id=invoice_id)
             if not invoice:
-                typer.echo(f"No invoice found with ID: ({invoice_id})")
-                raise typer.Exit(code=1)
+                invoice_not_found(invoice_id)
+                return
             
             typer.echo(
                 f"Invoice {invoice['invoice_id']} | "
@@ -331,7 +344,7 @@ def count_invoices(
             if user_id is not None:
                 user = database.get_user_by_id(cursor=cursor, user_id=user_id)
                 if not user:
-                    typer.echo(f"No user found with ID {user_id}")
+                    user_not_found(user_id)
                     raise typer.Exit(code=1)
                 count = database.count_invoices_by_user(cursor=cursor, user_id=user_id)
                 typer.echo(f"User: {user['name']}\n"
@@ -366,7 +379,7 @@ def update_invoice(
         try:
             invoice = database.get_invoice_by_id(cursor, invoice_id=invoice_id)
             if not invoice:
-                typer.echo(f"Invoice not found with invoice id: {invoice_id}")
+                invoice_not_found(invoice_id)
                 raise typer.Exit(code=1)
             no_new_date_issued = new_date_issued is None or database.to_iso(new_date_issued) == invoice['date_issued']
             no_new_date_due = new_date_due is None or database.to_iso(new_date_due) == invoice['date_due']
@@ -413,7 +426,7 @@ def delete_invoice(
         try:
             invoice = database.get_invoice_by_id(cursor=cursor, invoice_id=invoice_id)
             if not invoice:
-                typer.echo(f"No invoice found with ID {invoice_id}")
+                invoice_not_found(invoice_id)
                 raise typer.Exit(code=1)
             deleted = database.delete_invoice(cursor=cursor, invoice_id=invoice_id)
             if not deleted:

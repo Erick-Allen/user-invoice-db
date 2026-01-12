@@ -139,7 +139,7 @@ class TestDatabaseCRUD(unittest.TestCase):
         self.assertEqual(row['user_id'], user_id)
         self.assertEqual(row['date_issued'], "2025-01-20")
         self.assertEqual(row['total'], 30025)
-        self.assertIsNone(row["due_date"])
+        self.assertIsNone(row["date_due"])
 
     def test_get_invoice_by_id(self):
         user_id = database.create_user(self.cursor, TEST_NAME_1, TEST_EMAIL_1)
@@ -341,11 +341,11 @@ class TestDatabaseCRUD(unittest.TestCase):
         with self.assertRaises(ValueError):
             database.update_invoice(self.cursor, invoice_id, date_issued="invalid-date")
 
-    def test_update_invoice_invalid_due_date_raises(self):
+    def test_update_invoice_invalid_date_due_raises(self):
         user_id = database.create_user(self.cursor, TEST_NAME_1, TEST_EMAIL_1)
         invoice_id = database.add_invoice_to_user(self.cursor, user_id, "2/18/2025", 0)
         with self.assertRaises(ValueError):
-            database.update_invoice(self.cursor, invoice_id, due_date="invalid-date")
+            database.update_invoice(self.cursor, invoice_id, date_due="invalid-date")
 
     def test_update_invoice_negative_total_raises(self):
         user_id = database.create_user(self.cursor, TEST_NAME_1, TEST_EMAIL_1)

@@ -2,7 +2,7 @@
 
 A relational database project built with **SQLite** and **Python**. It manages users and their invoices with full **CRUD operations**, data validation, triggers, and summary views.
 
-As of **v0.4.0**, the project includes complete **Command Line Interface (CLI)** support for: 
+As of **v0.4.1**, the project includes complete **Command Line Interface (CLI)** support for: 
 - Database initialization, resetting and deletion
 - User management
 - Invoice management
@@ -53,6 +53,10 @@ pip install -r requirements.txt
 - `python cli.py --version`
 
 # Version History
+## [v0.4.1]
+### Added
+- CLI tests covering interface, integration, and negative cases
+
 ## [v0.4.0]
 ### Added
 - Full invoice CRUD support in the CLI
@@ -75,8 +79,6 @@ pip install -r requirements.txt
 
 # Roadmap
 
-## [v0.4.1] (Patch)
-- Add full automated CLI test suite
-
 ## [v0.5.0] (Minor)
 - Add Rich-based colored and formatted CLI output
+- Package CLI as an installable global console command

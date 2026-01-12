@@ -101,6 +101,8 @@ def assert_email_unique(cursor, email: str, exclude_user_id: int | None = None) 
 def validate_total(amount):
     if amount is None:
         raise ValueError("Invoice total is required.")
+    if not isinstance(amount, (int, float)):
+        raise ValueError("Invoice total must be a number.")
     if amount < 0:
         raise ValueError("Invoice total cannot be negative.")
     try:
