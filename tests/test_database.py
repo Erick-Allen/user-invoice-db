@@ -1,6 +1,6 @@
 import unittest
 import sqlite3
-import database
+from user_invoice_db import database
 
 
 TEST_NAME_1 = "John Doe"

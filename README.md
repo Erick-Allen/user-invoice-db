@@ -1,11 +1,13 @@
 # user-invoice-db
 
-A relational database project built with **SQLite** and **Python**. It manages users and their invoices with full **CRUD operations**, data validation, triggers, and summary views.
+A relational database project built with **SQLite** and **Python**. It manages users and their invoices with full **CRUD operations** through a **Command Line Interface (CLI)**.
 
-As of **v0.4.1**, the project includes complete **Command Line Interface (CLI)** support for: 
-- Database initialization, resetting and deletion
+As of **v0.5.0**, the **CLI** includes support for: 
+- Database initialization, reset, and deletion
 - User management
 - Invoice management
+- Rich terminal output
+- Dockerized runtime with persistent storage
 
 The CLI is built with [Typer](https://typer.tiangolo.com/)
 
@@ -13,49 +15,93 @@ The CLI is built with [Typer](https://typer.tiangolo.com/)
 - SQLite 3
 - Python 3
 - Typer
+- Rich
+- Docker
 
 ---
 
-# Installation
+# Installation (Local)
 
-Clone the repository and install dependencies:
+### Clone the repository and install dependencies:
 
 ```bash
 git clone https://github.com/Erick-Allen/user-invoice-db.git
 cd user-invoice-db
-pip install -r requirements.txt
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+### Verify installation:
+ 
+```bash
+userdb --help
+```
+
+# Installation (Docker)
+
+### Clone the repository and build the Docker image locally:
+
+```bash
+git clone https://github.com/Erick-Allen/user-invoice-db.git
+cd user-invoice-db
+docker build -t userdb .
+```
+
+### Docker Runner:
+
+```bash
+./run <command>
+```
+
+### Interactive Shell:
+
+```bash
+docker run --rm -it -v userdb_data:/data --entrypoint /bin/sh userdb
 ```
 
 # Usage
 
 **Database commands**
 
-- `python cli.py db init`
-- `python cli.py db drop`
-- `python cli.py db delete`
+- `userdb db init`
+- `userdb db drop`
+- `userdb db delete`
 
 **User commands**
-- `python cli.py users create`
-- `python cli.py users list`
-- `python cli.py users get`
-- `python cli.py users update`
-- `python cli.py users delete`
+- `userdb users create`
+- `userdb users list`
+- `userdb users get`
+- `userdb users update`
+- `userdb users delete`
 
 **Invoice commands**
-- `python cli.py invoices create`
-- `python cli.py invoices list`
-- `python cli.py invoices get`
-- `python cli.py invoices count`
-- `python cli.py invoices update`
-- `python cli.py invoices delete`
+- `userdb invoices create`
+- `userdb invoices list`
+- `userdb invoices get`
+- `userdb invoices count`
+- `userdb invoices update`
+- `userdb invoices delete`
 
 **Other**
-- `python cli.py --version`
+- `userdb --version`
+
+# Demo & Development Scripts
+
+The 'scripts/' folder contains helper scripts for:
+- Resetting the database
+- Seeding demo users and invoices
+- Running a full demo workflow
+
+The demo workflow runs against a dedicated `demo.sqlite` database in the project root and does not affect normal user data.
 
 # Version History
-## [v0.4.1]
+## [v0.5.0]
 ### Added
-- CLI tests covering interface, integration, and negative cases
+- Rich-based terminal output
+- Packaged CLI as a global console command (`userdb`)
+- Docker support
+- Demo automation scripts
 
 ## [v0.4.0]
 ### Added
@@ -63,22 +109,17 @@ pip install -r requirements.txt
 
 ## [v0.3.0]
 ### Added
-- Added Typer-based CLI for user CRUD and database management
-
-## [v0.2.1]
-### Added
-- Added negative test cases and enhanced test coverage.
-
-## [v0.2.0]
-### Added
-- Unit tests for all user and invoice CRUD functions.
+- Introduced Typer-based CLI for user and database management
 
 ## [v0.1.0]
 ### Added
-- Initial database setup with schema creation and core CRUD logic.
+- Initial SQLite schema and core CRUD functionality
 
 # Roadmap
 
-## [v0.5.0] (Minor)
-- Add Rich-based colored and formatted CLI output
-- Package CLI as an installable global console command
+## [v0.6.0] (Minor)
+- Invoice state, filtering and sorting
+- Query usability improvements
+
+## [v0.7.0] (Minor)
+- Reporting and analytics commands

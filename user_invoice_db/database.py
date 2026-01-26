@@ -3,54 +3,14 @@ from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
 from contextlib import contextmanager
 import re
+import os
 
 EMAIL_RE = re.compile(r"^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$")
 NAME_RE = re.compile(r"^[A-Za-z][A-Z-a-z' -]*[A-Za-z]$")
-
-# PRINT FUNCTIONS
-def format_user(u) -> str:
-    return f"{u['id']} {u['name']} {u['email']}"
-
-def print_user(u):
-    print(format_user(u))
-
-def print_users(rows):
-    if not rows:
-        print("No users found.")
-        return
-    for u in rows:
-        print_user(u)
-
-def format_invoice(i) -> str:
-    due = f" | Due: {i['date_due']}" if i['date_due'] else ""
-    return f"Invoice #{i['invoice_id']} | {i['date_issued']}{due} | ${fmt_dollars(i['total'])}"
-
-def print_invoice(i):
-    print(format_invoice(i))
-
-def print_invoices(rows):
-    if not rows:
-        print("No invoices found.")
-        return
-    for i in rows:
-        print_invoice(i)
-
-def format_user_summary(row) -> str:
-    return (
-        f"User #{row['user_id']} | {row['name']:<15} | "
-        f"Invoices: {row['invoice_count']} | Total: {fmt_dollars(row['total_cents'])}"                                          
-        )
-
-def print_user_summary(rows):
-    if not rows:
-        print("No summaries found.")
-        return
-    print("User Invoice Summary".center(60, "-"))
-    for r in rows:
-        print(format_user_summary(r))
+DB_PATH = os.getenv("USERDB_PATH", "userdb.sqlite")
 
 # HELPERS
-def open_db(db_file="mydatabase.db"):
+def open_db(db_file=DB_PATH):
     connect = sqlite3.connect(db_file)
     connect.execute("PRAGMA foreign_keys = ON;")
     connect.execute("PRAGMA recursive_triggers = OFF;")
@@ -58,7 +18,7 @@ def open_db(db_file="mydatabase.db"):
     return connect
 
 @contextmanager
-def db_session(db_file="mydatabase.db"):
+def db_session(db_file=DB_PATH):
     connect = open_db(db_file)
     try:
         yield connect, connect.cursor()
@@ -119,6 +79,9 @@ def to_cents(amount) -> int:
 def fmt_dollars(cents: int) -> str:
     """Convert integer cents (e.g. 35025) → formatted string '$350.25'."""
     return f"${(Decimal(cents) / Decimal(100)).quantize(Decimal('0.01'))}"
+
+def fmt_optional(value: str | None, empty: str = "-"):
+    return "-" if value is None else str(value)
 
 def to_iso(date_str: str) -> str:
     """Coerce 'MM-DD-YYYY' / 'MM/DD/YYYY' / 'YYYY-MM-DD' → 'YYYY-MM-DD'."""
