@@ -1,5 +1,5 @@
 import typer, sqlite3 
-from . import database
+from ..db import database
 from datetime import date
 from typing import Optional
 from contextlib import contextmanager
@@ -28,7 +28,7 @@ def require_user(cursor, user_id: int | None = None, email: str | None = None) -
     if user_id is None and email is None:
         raise ValueError("require_user needs user_id or email")
     elif user_id is not None:
-        user = database.get_user_by_id(cursor, user_id)
+        user = database.get_customer_by_id(cursor, user_id)
     elif email is not None:
         user = database.get_user_by_email(cursor, email)
 
@@ -75,7 +75,7 @@ def ensure_user_has_changes(user, new_name, new_email) -> None:
         raise typer.Exit(code=1)
 
 def delete_user_record(cursor, user_id) -> None:
-    deleted = database.delete_user(cursor, user_id)
+    deleted = database.delete_customer(cursor, user_id)
     if not deleted:
         console.print(f"Nothing deleted for ID {user_id}", style="error")
         raise typer.Exit(code=1)
@@ -247,10 +247,10 @@ def create_user(
 ):
     with get_connection(db_path) as (connect, cursor):
         try:
-            user_id = database.create_user(cursor, user_name, email)
+            user_id = database.create_customer(cursor, user_name, email)
             connect.commit()
 
-            user = database.get_user_by_id(cursor, user_id)
+            user = database.get_customer_by_id(cursor, user_id)
 
         except ValueError as ve:
             console.print(f"{ve}", style="error")
@@ -278,7 +278,7 @@ def get_user(
     with get_connection(db_path) as (connect, cursor):
         try: 
             if id:
-                user = database.get_user_by_id(cursor, id)
+                user = database.get_customer_by_id(cursor, id)
             else:
                 user = database.get_user_by_email(cursor, email_selector)
 
@@ -296,7 +296,7 @@ def list_users(
 ):
     with get_connection(db_path) as (connect, cursor):
         try:
-            users = database.get_users(cursor)
+            users = database.get_customers(cursor)
             
         except sqlite3.Error as e:
             db_error(e)
@@ -333,10 +333,10 @@ def update_user(
             
             ensure_user_has_changes(user, new_name, new_email)
             
-            updated = database.update_user(cursor, user['id'], new_name, new_email)
+            updated = database.update_customer(cursor, user['id'], new_name, new_email)
                 
             connect.commit()
-            updated_user = database.get_user_by_id(cursor, user['id'])
+            updated_user = database.get_customer_by_id(cursor, user['id'])
 
         except ValueError as ve:
             console.print(f"{ve}", style="error")
@@ -415,12 +415,12 @@ def list_invoices(
     with get_connection(db_path) as (connect, cursor):
         try:
             if user_id is not None:
-                user = database.get_user_by_id(cursor=cursor, user_id=user_id)
-                user_invoices = database.get_invoices_by_user_id(cursor=cursor, user_id=user_id)
+                user = database.get_customer_by_id(cursor=cursor, user_id=user_id)
+                user_invoices = database.get_invoices_by_customer_id(cursor=cursor, user_id=user_id)
             else:
-                users = database.get_users(cursor)
+                users = database.get_customers(cursor)
                 for u in users:
-                    invs = database.get_invoices_by_user_id(cursor, u['id'])
+                    invs = database.get_invoices_by_customer_id(cursor, u['id'])
                     users_with_invoices.append((u, invs))
         except sqlite3.Error as e:
             db_error(e)
@@ -468,9 +468,9 @@ def count_invoices(
     with get_connection(db_path) as (_, cursor):
         try:
             if user_id is not None:
-                user = database.get_user_by_id(cursor, user_id)
+                user = database.get_customer_by_id(cursor, user_id)
                 if user:
-                    count = database.count_invoices_by_user(cursor=cursor, user_id=user_id)
+                    count = database.count_invoices_by_customer(cursor=cursor, user_id=user_id)
             else:
                 count = database.count_invoices(cursor)      
 
