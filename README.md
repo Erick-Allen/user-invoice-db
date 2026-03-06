@@ -2,7 +2,7 @@
 
 A relational database project built with **SQLite** and **Python**. It manages customers and their invoices with full **CRUD operations** through a **Command Line Interface (CLI)**.
 
-As of **v0.5.1**, the **CLI** includes support for: 
+As of **v0.5.2**, the **CLI** includes support for: 
 - Database initialization, reset, and deletion
 - customer management
 - Invoice management

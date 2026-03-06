@@ -1,7 +1,7 @@
 [project]
 name = "invoice-db"
 authors = [{name = "Erick-Allen"}]
-version = "0.5.1"
+version = "0.5.2"
 dependencies = ["typer", "rich",]
 [project.scripts]
 invoicedb = "invoice_db.cli.app:app"

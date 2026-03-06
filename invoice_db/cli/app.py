@@ -4,7 +4,7 @@ from invoice_db.db import invoices as invoices_db
 from .common import console
     
 #CLI APP
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 app = typer.Typer(
     help=(
@@ -35,16 +35,3 @@ from .invoices_cmds import invoices_app
 app.add_typer(db_app, name="db")
 app.add_typer(customers_app, name="customers")
 app.add_typer(invoices_app, name="invoices")
-
-
-    
-    
-    
-
-# ----- DATABASE COMMANDS ------ 
-
-# ----- customer COMMANDS ------ 
-        
-    
-
-# ----- INVOICES COMMANDS ------ 
